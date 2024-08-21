@@ -44,20 +44,23 @@ Dev1py works with regular git repositories or bare git repositories with worktre
 An installation of dev1py is just a clone of its git repository, either regular or bare.
 Configuration is started by executing dev1.py from the clone's worktree on any branch.
 
-  cd to your install directory
+Dev1py is used on projects.  Dev1py is itself a project.  Choose a directory to contain projects you will use dev1py with
+
+for example /work/suites or /work/projects
+
+  cd to your projects or suites directory
 
 ``` bash
-  DEV1_INSTALL_DIR=$(pwd)
-  mkdir -p $DEV1_INSTALL_DIR/repositories
-  cd $DEV1_INSTALL_DIR/repositories
-  git clone --bare https://github.com/callahanp/dev1py.git 
-  cd $DEV1_INSTALL_DIR/repositories/dev1py.git
-  branch=Main
-  DEV1_WORKTREES_PATH=$DEV1_INSTALL_DIR/worktrees
-  mkdir -p $DEV1_WORKTREEs_PATH
-  DEV1_WORKTREE_PATH=$DEV1_WORKTREES_PATH/dev1py.$branch
-  git worktree add -B $branch $DEV1_WORKTREE_PATH
-  chmod +x $DEV1_WORKTREE_PATH/dev1.py
-  $DEV1_WORKTREE_PATH/dev1.py
+  DEV_PROJECTS_PATH=/work/suites
+  cd $DEV_PROJECTS_PATH
+  mkdir -p dev1py; cd dev1py
+  mkdir -p project repos trees
+  cd repos
+  git clone --bare https://github.com/callahanp/dev1py.git
+  DEV_WORKTREE_PATH=/work/suites/dev1py/worktrees
+  git worktree add -B main $DEV1_WORKTREE_PATH/dev1py.main
+  git worktree add -B next $DEV1_WORKTREE_PATH/dev1py.next
+  cd DEV_WORKTREE_PATH=/work/suites/dev1py/worktree/dev1py.main
+  ./dev1.py
 ```
  
