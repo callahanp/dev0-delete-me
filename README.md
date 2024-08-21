@@ -45,7 +45,8 @@ An installation of dev1py is just a clone of its git repository, either regular 
 Configuration is started by executing dev1.py from the clone's worktree on any branch.
 
   cd to your install directory
-  
+
+``` bash
   DEV1_INSTALL_DIR=$(pwd)
   mkdir -p $DEV1_INSTALL_DIR/repositories
   cd $DEV1_INSTALL_DIR/repositories
@@ -58,5 +59,5 @@ Configuration is started by executing dev1.py from the clone's worktree on any b
   git worktree add -B $branch $DEV1_WORKTREE_PATH
   chmod +x $DEV1_WORKTREE_PATH/dev1.py
   $DEV1_WORKTREE_PATH/dev1.py
-
+```
  
