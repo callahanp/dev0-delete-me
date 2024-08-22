@@ -51,16 +51,20 @@ for example /work/suites or /work/projects
   cd to your projects or suites directory
 
 ``` bash
-  DEV_PROJECTS_PATH=/work/suites
-  cd $DEV_PROJECTS_PATH
-  mkdir -p dev1py; cd dev1py
-  mkdir -p project repos trees
+  DEV_PROJECTS_DIR=/work/suites
+  cd $DEV_PROJECTS_DIR
+    mkdir -p dev1py;
+  cd dev1py
+    mkdir -p project repos trees edit
   cd repos
-  git clone --bare https://github.com/callahanp/dev1py.git
-  DEV_WORKTREE_PATH=/work/suites/dev1py/worktrees
-  git worktree add -B main $DEV1_WORKTREE_PATH/dev1py.main
-  git worktree add -B next $DEV1_WORKTREE_PATH/dev1py.next
-  cd DEV_WORKTREE_PATH=/work/suites/dev1py/worktree/dev1py.main
-  ./dev1.py
+    git clone --bare https://github.com/callahanp/dev1py.git
+  cd dev1py.git
+    DEV_WORKTREES_DIR=/work/suites/dev1py/trees
+    git worktree add -B main $DEV_WORKTREES_DIR/dev1py.main
+    git worktree add -B next $DEV_WORKTREES_DIR/dev1py.next
+  DEV_WORKTREE_PATH=/work/suites/dev1py/trees/dev1py.main
+  cd $DEV_WORKTREE_PATHmkdi
+    chmod +x dev1.py
+    ./dev1.py
 ```
  
