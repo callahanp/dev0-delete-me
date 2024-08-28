@@ -53,14 +53,14 @@ for example /work/suites or /work/projects
 ``` bash
   DEV_PROJECTS_PATH=/work/suites
   cd $DEV_PROJECTS_PATH
-  mkdir -p devpy; cd devpy
+  mkdir -p dev1py; cd dev1py
   mkdir -p project repos trees
   cd repos
-  git clone --bare https://github.com/callahanp/devpy.git
-  DEV_WORKTREE_PATH=/work/suites/devpy/worktrees
-  git worktree add -B main $dev_WORKTREE_PATH/devpy.main
-  git worktree add -B next $dev_WORKTREE_PATH/devpy.next
-  cd DEV_WORKTREE_PATH=/work/suites/devpy/worktree/devpy.main
-  ./dev.py
+  git clone --bare https://github.com/callahanp/dev1py.git
+  DEV_WORKTREE_PATH=/work/suites/dev1py/worktrees
+  git worktree add -B main $DEV1_WORKTREE_PATH/dev1py.main
+  git worktree add -B next $DEV1_WORKTREE_PATH/dev1py.next
+  cd DEV_WORKTREE_PATH=/work/suites/dev1py/worktree/dev1py.main
+  ./dev1.py
 ```
 

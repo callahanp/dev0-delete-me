@@ -47,7 +47,6 @@ function fCMakeBuildType(){
 
 function fSuiteName(){
 
-# parameter is a string matching a script
   if [[ "$_suiteName" == "" \
         && "$1" != ""
         && "$1" != "--"
