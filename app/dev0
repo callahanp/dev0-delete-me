@@ -1,0 +1,123 @@
+#!/bin/bash
+if [[ "$DEV_SUITES_DIR" == "" || $DEV_APP_DIR == "" ]]; then
+  echo "DEV_SUITES_DIR and/or DEV_APP_DIR are not defined"
+  echo "Please set and export DEV_SUITES_DIR AND DEV_APP_DIR in .bashrc"
+  exit 1
+fi
+#
+# dev0 must be sourced
+# separate routines establish the value of
+# - suites - the directory where suites are located
+# - command - cd, ide, build or run
+# - suite - one of the sub-directories of suites
+# - gitReference - one of the branches in trees or worktrees
+# - cmakeBuildType - d, r, rd or m
+# - cdTarget - cd + directory indicated by an alias, or an actual path
+# - 
+# - codeWorkspace - one of the code-workspace files in /suites/suite/edit
+# - project - location of run and build 
+#             /suites/suite/project/build or /suites/suite/project/buil
+#             
+# phases:
+# 1. parameter values
+# 2. error analysis
+# 3. execution
+
+#=======================================================================
+# phase 1. parameter values
+#=======================================================================
+# each passed parameter is examined to determine if it is a particular
+# kind of object
+# command is required command cd may appear anywhere in the parameters
+# optional - suite
+# optional - git-reference (depends on suite having a value)
+# optional - CMakeBuildType
+# optional - Code Workspace
+
+# target values
+
+declare -g Command=""        #declaring variables global in the calling
+declare -g Suite=""          # routine has no real effect.  It's done
+declare -g GitReference=""   # here to document which are global and
+declare -g CMakeBuildType="" # show the capitalized variable names for 
+declare -g CodeWorkspacePath="" # all global target variables
+
+# Global reference values. These are also globals, but are used by functions producing target values
+validSuites=( $(ls -l "$DEV_SUITES_DIR" |grep -e "^d"|sed -e 's/.* //') )
+validCMakeBuildTypes=( Debug debug D d Release release R r RelWithDebInfo relwithdebinfo RD Rd rd MinSizeRel M m )
+validCdTargets=( b build e edit p project r repository rs repositories t tree ts trees w worktree ws worktrees )
+declare -A _cmakeBuildTypes_lookup=( \
+  ["Debug"]="Debug"                   ["debug"]="Debug"     ["d"]="Debug"   ["D"]="Debug" \
+  ["Release"]="Release"               ["release"]="Release" ["r"]="Release" ["R"]="Release" \
+  ["RelWithDebInfo"]="RelWithDebInfo" ["relwithdebinfo"]="RelWithDebInfo" \
+  ["rd"]="RelWithDebInfo"             ["Rd"]="RelWithDebInfo" ["RD"]="RelWithDebInfo" \
+  ["MinSizeRel"]="MinSizeRel"         ["minsizerel"]="MinSizeRel" \
+  ["m"]="MinSizeRel"                  ["M"]="MinSizeRel" )
+declare -A _commands_lookup=(   ["b"]="/suites/suite/project/build" ["build"]="/suites/suite/project/build" \
+                                ["i"]="/suites/suite/ide/ide"       ["ide"]="/suites/suite/ide/ide" \
+                                ["r"]="/suites/suite/project/run" 
+                                  ["run"]="/suites/suite/project/run" \
+                                ["c"]="/suites/suite/project/cd"    ["cd"]="/suites/suite/project/cd" \
+ )
+
+function fCommand(){
+    Command=${_commands_lookup["$1"]}
+    if $Command; then 
+        return 0
+    else return 1
+    fi
+}
+function fSuiteName(){
+
+  if [[ "$_suiteName" == "" \
+        && "$1" == "" ]]; then
+    d=$(pwd);echo "pwd: $(pwd)";d=${d##"$DEV_SUITES_DIR"/};d=${d%%/*}
+    if [[ " ${validSuites[*]} " =~ [[:space:]]${d}[[:space:]] ]]; then
+      _suiteName=$d
+    fi
+  fi
+  if [[ "$_suiteName" == "" && "$1" != "" ]]; then
+    _suiteName="$1"
+  fi
+  if [[ "$_suiteName" == "" && "$1" == "" ]]; then
+    # shellcheck disable=SC2154
+    _suiteName=$_suiteNamePrev #defined by sourcing set_prev_environment
+  fi
+
+  return 0
+}
+function fCMakeBuildType(){
+  if [[ "$1" != "--" && "$1" != "" && " ${validCMakeBuildTypes[*]} " =~ [[:space:]]$1[[:space:]] ]]; then
+    _cmakeBuildType=$1
+    return 0
+  else
+    return 1
+  fi
+}
+#                  =================================
+if fCommand "$1"; then shift; 
+else
+    echo "Error: First Parameter is not a valid command"
+    echo "try one of ${!_commands_lookup[*]}"
+    return 1
+fi
+while [[ "$1" != "" ]]; do
+if [ ! "$SuiteName" ]; then if fSuiteName "$1"; then shift; else exit 1; fi fi
+if ! "$CMakeBuildType" && fCMakeBuildType "$1"; then shift; fi
+done
+echo "$Command" "$Suite" "$GitReference" "$CMakeBuildType" "$CodeWorkspacePath" "$DEV_SUITES_DIR"
+
+# 
+#=======================================================================
+# phase 2. error analysis
+#=======================================================================
+# depending on the command, certain parameters are required.
+# cd requires a second parameter indicating directory-type or a path
+#    cd with directory-type requires output parameter values 
+#    for suite and  git-reference
+#  build and run require suite, git-reference and cMakeBuildType
+#  ide requires suite, git-reference and code-workspace
+
+#=======================================================================
+# phase 3. execution
+#=======================================================================

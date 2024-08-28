@@ -1,0 +1,6 @@
+declare -A _commands_lookup=(   ["b"]="/suites/suite/project/build" ["build"]="/suites/suite/project/build" \
+                                 ["i"]="/suites/suite/ide/ide"       ["ide"]="/suites/suite/ide/ide" \
+                                 ["r"]="/suites/suite/project/run"   ["r"]="/suites/suite/project/run" \
+                                 ["c"]="/suites/suite/project/cd"    ["cd"]="/suites/suite/project/cd" \
+ )
+ echo ${!_commands_lookup[*]}

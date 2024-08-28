@@ -1,0 +1,10 @@
+"configurations": [
+  {
+    "type": "bashdb",
+    "request": "launch",
+    "name": "Bash simple",
+    "cwd": "/work/suites/dev1py/trees/dev1py.next/app",
+    "program": "${file}",
+    "terminalKind": "integrated"   <---- This attaches the integrated terminal.
+  }
+]

@@ -1,0 +1,124 @@
+
+
+
+helper_run(){
+  export DEV_SUITES_DIR="$5"
+  export DEV_APP_DIR="$6"
+  echo "\$5: $5"
+  echo "\$6: $6"
+  rm -f ../test_data/wxyz/project/setPreviousEnvironment
+  run $DEV_APP_DIR/devpy  $1 $2 $3 $4
+  if [[ "$5" != "noecho" ]]; then
+    i=0
+    while [ $i -lt ${#lines[@]} ]; do
+    echo --${lines[$i]}--
+    ((i=i+1))
+    done
+  fi
+  echo "# output: \
+   $output" >&3
+}
+
+@test "1. can run our script" {
+    run ../app/devpy
+}
+
+@test "2. No previous settings, DEV_SUITES_DIR undefined " {
+    helper_run "" "" "" "" "" "../app"
+        while [ $i -lt ${#lines[@]} ]; do
+    echo --${lines[$i]}--
+    ((i=i+1))
+    done
+    [ "${lines[0]}" = "DEV_SUITES_DIR and/or DEV_APP_DIR are not defined" ]
+}
+
+@test "3. No previous settings, no parameters at all" {
+  helper_run "" "" "" "" "../test_data" "../app"
+  [ "${lines[0]}" = "You need to enter a command as the first parameter:" ]
+  [ "${lines[1]}" = "   suite or s, ide or i, build or b, run or r" ]
+}
+
+  @test "4. No previous settings, r command, no suite not in a suite already " {
+  helper_run "r" "" "" "" "$(realpath ../test_data)" "$(realpath ../app)"
+  cd ~
+  [ "${lines[0]}" = "Specify the name of an app or suite." ]
+}
+  @test "5. No previous settings, r command,  in a suite already " {
+ 
+  helper_run "r" "" "" "" "$(realpath ../test_data)" "$(realpath ../app)"
+ echo $(pwd)
+  cd ../test_data/wxyz
+  echo $(pwd)
+  [ "${lines[0]}" = "Suite name: wxyz. Please specify a git branch, tag or commit" ]
+}
+  @test "6. No previous settings, r command,  in a suite already - change suites" {
+  export DEV_SUITES_DIR=$(realpath "../test_data")
+  cd $DEV_SUITES_DIR/wxyz
+  run /bin/bash ../../app/devpy r wwww
+  echo ${lines[0]}
+  [ "${lines[0]}" = "Suite name: wwww. Please specify a git branch, tag or commit" ]
+}
+
+@test "No previous settings, invalid command x" {
+  export DEV_SUITES_DIR=$(realpath "../test_data")
+  run ../app/devpy x
+  # echo ${lines[0]}
+  [ "${lines[0]}" = "x should be one of suite or s, ide or i, build or b, run or r. you asked for x" ]
+}
+@test "No previous settings, r command suite 'notFound' does not exist" {
+  export DEV_SUITES_DIR=$(realpath "../test_data")
+  run ../app/devpy r wxyz notFound
+  echo ${lines[0]}
+  [ "${lines[0]}" = "Branch notFound not among the worktrees" ]
+}
+
+
+  @test "No previous settings, r command, suite wxyz exists" {
+  export DEV_SUITES_DIR="../test_data"
+  run ../app/devpy r wxyz
+  echo ${lines[0]}
+  [ "${lines[0]}" = "Suite name: wxyz. Please specify a git branch, tag or commit" ]
+}
+
+@test "No previous settings, r command, suite wxyz,  no branch specified" {
+  export DEV_SUITES_DIR="../test_data"
+  run ../app/devpy r wxyz
+  echo ${lines[0]}
+  [ "${lines[0]}" = "Suite name: wxyz. Please specify a git branch, tag or commit" ]
+  }
+
+@test "No previous settings, r command, suite wxyz, with invalid branch" {
+ helper_run "r" "wxyz" "invalidBranch" "" "../test_data" "../app)"
+  echo --${lines[1]}
+  [ "${lines[0]}" = "Branch invalidBranch not among the worktrees" ]
+  [ "${lines[1]}" = "in ../test_data/wxyz/trees" ]
+  }
+
+  @test "No previous settings, r command, suite wxyz, with valid branch" {
+  helper_run "r" "wxyz" "validBranch" "" "$(realpath ../test_data)" "$(realpath ../app)"
+
+  [ "${lines[0]}" = "r wxyz validBranch RelWithDebInfo" ]
+  }
+helper() {
+  local -r abbr="$1"
+  local -r build_type="$2"
+  export DEV_SUITES_DIR="../test_data"
+    run ../app/devpy r wxyz validBranch $abbr
+    echo --${lines[0]}--
+  [ "${lines[0]}" = "r wxyz validBranch $build_type" ]
+}
+@test "cmake_build_type: d Debug" {
+  helper d Debug
+  }
+@test "cmake_build_type: D Debug" {
+  helper d Debug
+  }
+  @test "cmake_build_type: debug Debug" {
+  helper debug Debug
+  }
+  @test "cmake_build_type: Debug Debug" {
+  helper Debug Debug
+  }
+@test "test something else." {
+    run 
+}

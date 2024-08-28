@@ -1,0 +1,5 @@
+#!/bin/bash
+
+export a="in cd, pwd: $(pwd)"
+echo $a
+echo "b=$b"

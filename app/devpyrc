@@ -1,0 +1,16 @@
+#!/bin/bash
+true=0
+false=1
+devpyrc_continue=$true
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  echo "devpyrc cannot be run directly. Use: source devpyrc"
+  return
+fi
+
+if [[ "$DEV_SUITES_DIR" == "" ||"$DEV_APP_DIR" == ""  ]]; then
+  echo "DEV_SUITES_DIR and/or DEV_APP_DIR are not defined"
+  echo "Please set and export DEV_SUITES_DIR AND DEV_APP_DIR in .bashrc"
+  return
+fi
+echo $DEV_SUITES_DIR;

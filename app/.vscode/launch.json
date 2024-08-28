@@ -1,0 +1,16 @@
+{
+    "configurations": [
+    {
+        "type": "bashdb",
+        "request": "launch",
+        "name": "Bash simple",
+        "cwd": "${workspaceFolder}/../test_data/wxyz",
+        "program": "${file}",
+        "args": ["","",""," "],
+        "terminalKind": "integrated",
+        "env": {
+                "DEV_SUITES_DIR": "/home/pac1/work/suites/dev1py/trees/dev1py.next/test_data"
+            }
+    }
+    ]
+}

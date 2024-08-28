@@ -1,0 +1,6 @@
+#!/bin/bash
+if [[ "$DEV_SUITES_DIR" == "" || $DEV_APP_DIR == "" ]]; then
+  echo "DEV_SUITES_DIR and/or DEV_APP_DIR are not defined"
+  echo "Please set and export DEV_SUITES_DIR AND DEV_APP_DIR in .bashrc"
+  exit 1
+fi

@@ -1,0 +1,244 @@
+#!/bin/bash
+if [[ "$DEV_SUITES_DIR" == "" || $DEV_APP_DIR == "" ]]; then
+  echo "DEV_SUITES_DIR and/or DEV_APP_DIR are not defined"
+  echo "Please set and export DEV_SUITES_DIR AND DEV_APP_DIR in .bashrc"
+  exit 1
+fi
+
+# shellcheck disable=SC2207
+# shellcheck disable=SC2010
+validSuites=( $(ls -l "$DEV_SUITES_DIR" |grep -e "^d"|sed -e 's/.* //') )
+commands=( suite s ide i build b run r )
+commands_text="suite or s, ide or i, build or b, run or r"
+
+valid__cmakeBuildTypes=( Debug debug D d Release release R r RelWithDebInfo relwithdebinfo RD Rd rd MinSizeRel M m )
+cdTargets=( b build e edit p project r repository rs repositories t tree ts trees w worktree ws worktrees )
+declare -A _cmakeBuildTypes_lookup=( \
+  ["Debug"]="Debug"                   ["debug"]="Debug"     ["d"]="Debug"   ["D"]="Debug" \
+  ["Release"]="Release"               ["release"]="Release" ["r"]="Release" ["R"]="Release" \
+  ["RelWithDebInfo"]="RelWithDebInfo" ["relwithdebinfo"]="RelWithDebInfo" \
+  ["rd"]="RelWithDebInfo"             ["Rd"]="RelWithDebInfo" ["RD"]="RelWithDebInfo" \
+  ["MinSizeRel"]="MinSizeRel"         ["minsizerel"]="MinSizeRel" \
+  ["m"]="MinSizeRel"                  ["M"]="MinSizeRel" )
+declare -A _commands_lookup=( ["b"]="fBuild" ["i"]="fIde" ["r"]="frun" )
+
+declare -g _suiteName
+declare -g _gitReference
+declare -g _cmakeBuildType
+declare -g _devSuitesDir
+declare -g _codeWorkspacePath
+
+declare -g _suiteNamePrevious
+declare -g _gitReferencePrevious
+declare -g _cmakeBuildTypePrevious
+
+declare -g _cdTarget
+
+declare -g _treesDir
+
+
+function fCMakeBuildType(){
+  if [[ "$1" != "--" && "$1" != "" && " ${valid__cmakeBuildTypes[*]} " =~ [[:space:]]$1[[:space:]] ]]; then
+    _cmakeBuildType=$1
+    return 0
+  fi
+  return 1
+}
+
+function fSuiteName(){
+
+# parameter is a string matching a script
+  if [[ "$_suiteName" == "" \
+        && "$1" != ""
+        && "$1" != "--"
+        && " ${validSuites[*]} " =~ [[:space:]]$1[[:space:]] ]]; then
+    _suiteName="$1"
+  fi
+
+# parameter is empty and our path includes a suite
+  if [[ "$_suiteName" == "" \
+        && "$1" == "" ]]; then
+    d=$(pwd);echo "pwd: $(pwd)";d=${d##"$DEV_SUITES_DIR"/};d=${d%%/*}
+    if [[ " ${validSuites[*]} " =~ [[:space:]]${d}[[:space:]] ]]; then
+      _suiteName=$d
+    fi
+  fi
+
+# parameter is empty, suite name is empty, then use the previous value
+  if [[ "$_suiteName" == "" && "$1" == "" ]]; then
+    # shellcheck disable=SC2154
+    _suiteName=$_suiteNamePrev #defined by sourcing set_prev_environment
+  fi
+
+  return 0
+}
+function fcd(){
+  if [[ "$1" == "cd" ]]; then
+    if [[ ! " ${cdTargets[*]} " =~ [[:space:]]$2[[:space:]] ]]; then
+      return 1
+    else
+      _cdTarget="$2"
+      return 2
+    fi
+  fi
+  return 0
+}
+function fCodeWorkspace(){
+  editPath=$DEV_SUITES_DIR/$_suiteName/edit
+  declare -a codeWorkspaceFiles
+  mapfile -t codeWorkspaceFiles < <(find "$editPath" -name \*.code-workspace )
+  searchString="$1.code-workspace"
+  if [[ ! " ${codeWorkspaceFiles[*]} " =~ [[:space:]]${searchString}[[:space:]] ]]; then
+  _codeWorktreeMatch=$1
+  fi
+}
+function fSetTreesDir() {
+  if [[ -e $DEV_SUITES_DIR/$_suiteName/trees ]]; then
+    _treesDir=$DEV_SUITES_DIR/$_suiteName/trees
+  fi
+  if [[ -e $DEV_SUITES_DIR/$_suiteName/worktrees ]]; then
+    _treesDir=$DEV_SUITES_DIR/$_suiteName/worktrees
+  fi
+  if [[ "$_treesDir" == "" ]];then
+    echo " Could not find $DEV_SUITES_DIR/$_suiteName/worktrees or $DEV_SUITES_DIR/$_suiteName/trees"
+    return 1
+  fi
+  return 0
+}
+fGitReference () {
+_gitReference_found=$(find "$_treesDir/" -name \*"$1")
+if [[ "$1" != "" &&  ! $_gitReference_found == "" ]]; then
+  _gitReference=$1
+  return 0
+fi
+return 1
+}
+#-----------------------------------------------------------------------------------------------
+# #### ##### #######
+# have valid command
+# #### ##### #######
+if [[ -e "$DEV_SUITES_DIR/setPreviousEnvironment" ]];
+then
+  # shellcheck disable=SC1091
+  source "$DEV_SUITES_DIR/setPreviousEnvironment"
+fi
+if [[ "$1" == "" ]];then
+  echo "You need to enter a command as the first parameter:"
+  echo "   ${commands_text}"
+  exit 1
+fi
+
+if [[ ! " ${commands[*]} " =~ [[:space:]]$1[[:space:]] ]]; then
+  echo "$1 should be one of $commands_text. you asked for $1"
+  exit 1
+fi
+_command=$1
+shift
+
+if fCMakeBuildType "$1"; then shift; fi
+
+if fSuiteName "$1"; then
+  shift
+fi
+if [[ "$_suiteName" == "" ]]; then
+  fSuiteName ""
+  if [[ "$?" == "1" ]]; then
+    exit 1
+  fi
+fi
+if [[ "$_suiteName" == "" ]]; then
+  echo "Specify the name of an app or suite."
+  exit 1
+fi
+# #######  #### ##### ##### ####
+# assert: "have valid suite name"
+# #######  #### ##### ##### ####
+if [[ ! -d $DEV_SUITES_DIR/$_suiteName/ ]]; then
+  echo " assert: \"have valid suite name\" failed"
+  exit 1
+fi
+suitePreviousVariablesPath=$DEV_SUITES_DIR/$_suiteName/project/setPreviousEnvironment
+if [[ -e "$suitePreviousVariablesPath" ]];
+then
+  # shellcheck disable=SC1091
+  # shellcheck disable=SC1090
+  source "$suitePreviousVariablesPath"
+fi
+if ! fSetTreesDir ; then  exit 1; fi
+flag=0
+while [[ "$flag" == "0" && "$1" != "" && "$1" != "--" ]];do
+  flag=1
+  if [ ! "$_git_reference"  ]; then if fGitReference "$1"; then shift; flag=0; fi  fi
+  if [ ! "$_codeWorkspace"  ]; then if fCodeWorkspace "$1"; then shift;  flag=0; fi fi
+  if [ ! "$_cmakeBuildType" ]; then if fCMakeBuildType "$1"; then shift;  flag=0; fi fi
+  if [ ! "$_cdTarget"       ]; then
+    fcd "$1" "$2" # inverted meaning of return code in fcd: 0 - 0 is did not find, 1 or 2 is did find
+    shifts=$?
+    if [[ "$shifts" == "2" ]]; then shift; shift;  flag=0;fi
+    if [[ "$shifts" == "1" ]]; then shift;  flag=0; fi
+  fi
+done
+if [ ! "$_codeWorkspace" ]; then fCodeWorkspace "$_suiteName.$_gitReference.code-workspace"; fi
+if [ ! "$_gitReference" ];   then _gitReference=$_gitReferencePrevious ; fi
+if [ ! "$_cmakeBuildType" ]; then _cmakeBuildType=$_cmakeBuildTypePrevious ; fi
+
+if [[ "$1" == "--" ]]; then shift; fi
+
+if [ ! "$_cmakeBuildType" ]; then _cmakeBuildType="RelWithDebInfo"; fi
+
+_cmakeBuildType=${_cmakeBuildTypes_lookup[$_cmakeBuildType]}
+
+# ----------------------------------------------------------------------------------------------------------
+
+  if [[ "$_suiteName" == "" && "$1" != "" ]]; then
+    return 3
+  fi
+  if [[ "$_suiteName" == "" \
+        && "$1" == ""
+        && $_suiteNamePrev == "" ]]; then
+    echo "Specify the name of an app or suite."
+    return 1
+  elif [[  ! -e $DEV_SUITES_DIR/$_suiteName ]]; then
+    echo "$_suiteName is not found in DEV_SUITES_DIR: $DEV_SUITES_DIR"
+    return 1
+  fi
+  if [[ "$_gitReference" == "" ]]; then
+    echo "Suite  Name: $_suiteName."
+    echo "Please Specify a git branch, tag or commit"
+    echo "For Which there is a worktree."
+    exit 1
+  fi
+# ---------------------------------------------------------------------------------------------------------
+
+echo "$_command \"$_suiteName\" \"$_gitReference\" \"$_cmakeBuildType\" \"$_cdTarget\" \"$_codeWorkspacePath\""
+
+cat >"$suitePreviousVariablesPath" <<EOD
+_suiteNamePrev="$_suiteName"
+_gitReferencePrevious="$_gitReference"
+_cmakeBuildTypePrevious="$_cmakeBuildType"
+
+EOD
+commandFunction=${_commands_lookup["_command"]}
+_command=${commandFunction#f}
+declare -a quotedParameters=( "\"$_command \"" "\"$_suiteName\"" "\"$_gitReference\"" "\"$_cmakeBuildType\"" "\"$_cdTarget\"" "\"--\"")
+while [[ "$1" != "" ]]; do parameters+=("\"$1\"");shift;  done
+
+declare -a unquotedParameters=( "$_command" "$_suiteName" "$_gitReference" "$_cmakeBuildType" "$_cdTarget" "--")
+while [[ "$1" != "" ]]; do parameters+=("$1");shift;  done
+
+
+
+function fIde(){
+  # shellcheck disable=SC2068
+  echo ide  ${unquotedParameters[@]}
+}
+function fRun(){
+  # shellcheck disable=SC2068
+  echo run   ${quotedParameters[@]}
+}
+function fbuild(){
+  # shellcheck disable=SC2068
+  echo build   ${quotedParameters[@]}
+}
+
+$commandFunction
